@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
+    </head>
+
+    <body>
+        <div id="map" style="height:512px; width:512px; border:1px solid grey; padding:5px"></div>
+        <button id="button-left"><</button>
+        <button id="button-right">></button>
+
+        <br/>
+        <p>Change the date range using the controls below. If there is no data for the specified date, a blank image will be returned. <br/>
+            You can select up to 30 days after the start date.
+        </p>
+        Start Date: <input type="date" id="start-date" value="2026-01-01">
+        <br/>
+        Days after: <input type="range" id="days-after" min="0" max="30" value="9">
+        <span id="days-label"></span>
+        <br/>
+        <p>Change the color of the map using the sliders below.</p>
+        R <input type="range" id="r" min="0" max="255" value="220">
+        <br/>
+        G <input type="range" id="g" min="0" max="255" value="100">
+        <br/>
+        B <input type="range" id="b" min="0" max="255" value="100">
+        <br/>
+        <span id="swatch" style="display:inline-block; width:30px; height:20px; background:rgb(220,100,100);"></span>
+        <br/>
+        <p>Click the button below to update the map with the new date range and color choice.</p>
+        <button id="button-apply">Update Map</button>
+
+        <script>
+            let date1 = '2026-01-01';
+            let date2 = '2026-01-10';
+            let east = -60;
+            let west = east + 180;
+            let color = '220+100+100';
+            
+            let key = '9b47c7ec5732baf5e161529eedb0583b';
+
+            update_map(east, west, date1, date2);
+
+            function update_map(east, west, date1, date2) {
+
+                let src = `https://firms.modaps.eosdis.nasa.gov/mapserver/wms/fires/${key}/?REQUEST=GetMap&layers=fires_modis&COLORS=${color}&TIME=${date1}/${date2}&WIDTH=512&HEIGHT=512&BBOX=${east},-90,${west},90`;
+                console.log(src);
+                $("#map").html(`<img src="${src}"></img>`);
+
+            }
+
+            $("#button-left").click(function() {
+                east -= 10;
+                west = east + 180;
+                update_map(east, west, date1, date2);
+                if (east <= -180) 
+                    this.disabled = true;
+                if ($("#button-right").prop('disabled'))
+                    $("#button-right").prop('disabled', false)
+            })
+            $("#button-right").click(function() {
+                east += 10;
+                west = east + 180;
+                update_map(east, west, date1, date2);
+                if (east >= 0)
+                    this.disabled = true;
+                if ($("#button-left").prop('disabled'))
+                    $("#button-left").prop('disabled', false)
+            })
+            
+            $("#days-label").text($("#days-after").val());
+            $("#days-after").on("input", function() { $("#days-label").text(this.value); });
+            $("#r, #g, #b").on("input", function() {
+                $("#swatch").css("background-color", `rgb(${$("#r").val()},${$("#g").val()},${$("#b").val()})`);
+            });
+            $("#r").trigger("input");
+
+            $("#button-apply").click(function() {
+                let new_date = $("#start-date").val();
+                let d = new Date(new_date);
+                d.setUTCDate(d.getUTCDate() + Number($("#days-after").val()));
+                let new_end_date = d.toISOString().slice(0, 10);
+
+                color = `${$("#r").val()}+${$("#g").val()}+${$("#b").val()}`;
+                date1 = new_date;          
+                date2 = new_end_date;
+                update_map(east, west, new_date, new_end_date);
+            });
+
+        </script>
+    </body>
+</html>
